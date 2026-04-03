@@ -1,0 +1,9 @@
+{
+  "name": "submission-watcher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:one-story": "node one-story-watcher/check-local.mjs"
+  }
+}

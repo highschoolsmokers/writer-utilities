@@ -1,0 +1,10 @@
+# Grind contact list — one entry per line: First Last, email@example.com
+# Lines starting with # are ignored. Blank lines are ignored.
+Chelsea Tokuno-Lynk, cktokuno@gmail.com
+Eliza Stamps, elizastamps@gmail.com
+Karen Craigo, karen.craigo@gmail.com
+Kathryn Bratt-Pfotenhauer, kcbrattpfotenhauer@gmail.com
+Laurie Cohen-Ringler, Ringlerlaurie@gmail.com
+Roseanne Pereira, roseanne.pereira@gmail.com
+WS Gong, billygong@me.com
+Claudia Putnam, claudiaputnam2@gmail.com
