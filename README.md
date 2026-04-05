@@ -12,7 +12,7 @@ A collection of scripts, AI agents, and small apps.
 
 | Name | Description |
 |------|-------------|
-| — | *None yet* |
+| [research-agent](agents/research-agent/) | Historical research agent for writers — people, cultures, places, events, and newspaper archives |
 
 ## Apps
 
