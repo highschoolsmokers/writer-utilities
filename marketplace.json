@@ -1,0 +1,35 @@
+{
+  "name": "writer-utilities",
+  "owner": {
+    "name": "highschoolsmokers"
+  },
+  "plugins": [
+    {
+      "name": "literary-research-agent",
+      "source": {
+        "source": "github",
+        "repo": "highschoolsmokers/literary-research-agent"
+      },
+      "description": "Literary research agent — finds verified quotes from archives, builds citations, analyzes craft and theory across published texts",
+      "version": "1.0.0"
+    },
+    {
+      "name": "historical-research-agent",
+      "source": {
+        "source": "github",
+        "repo": "highschoolsmokers/historical-research-agent"
+      },
+      "description": "Historical research agent — investigates real people, cultures, places, events, and newspaper archives for writers",
+      "version": "1.0.0"
+    },
+    {
+      "name": "submission-watcher-agent",
+      "source": {
+        "source": "github",
+        "repo": "highschoolsmokers/submission-watcher-agent"
+      },
+      "description": "Monitors literary magazine submission windows and emails you when they open — Vercel cron with Resend alerts",
+      "version": "1.0.0"
+    }
+  ]
+}
