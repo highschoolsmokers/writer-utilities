@@ -245,7 +245,7 @@ def run(doc_name=None, doc_id=None, local_file=None,
             print(f"Found: '{found_name}' ({source_id})")
 
         print("Reading doc contents...")
-        doc_content = read_google_doc(docs_service, source_id)
+        doc_content = read_google_doc(docs_service, source_id, drive_service=drive_service)
         source_label = doc_content["title"]
 
     section_count = len(doc_content["sections"])

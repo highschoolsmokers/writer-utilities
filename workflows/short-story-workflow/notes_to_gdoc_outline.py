@@ -145,9 +145,22 @@ def extract_doc_id_from_url(url_or_id):
 #    {"title": str, "sections": [{"heading": str|None, "lines": [str]}]}
 # ═══════════════════════════════════════════════════════════════════════
 
-def read_google_doc(docs_service, doc_id):
-    """Read a Google Doc via the Docs API."""
-    doc = docs_service.documents().get(documentId=doc_id).execute()
+def read_google_doc(docs_service, doc_id, drive_service=None):
+    """
+    Read a Google Doc via the Docs API.
+
+    Falls back to downloading via Drive API if the file is an uploaded
+    .docx/.pdf (not a native Google Doc) — those can't be read by the Docs API.
+    """
+    try:
+        doc = docs_service.documents().get(documentId=doc_id).execute()
+    except Exception as e:
+        error_str = str(e)
+        if drive_service and ("404" in error_str or "403" in error_str or "Invalid document" in error_str):
+            print("  (Not a native Google Doc — downloading via Drive...)")
+            return _read_drive_file_fallback(drive_service, doc_id)
+        raise
+
     title = doc.get("title", "Untitled")
 
     sections = []
@@ -182,6 +195,52 @@ def read_google_doc(docs_service, doc_id):
         sections.append(current_section)
 
     return {"title": title, "sections": sections}
+
+
+def _read_drive_file_fallback(drive_service, file_id):
+    """
+    Download a file from Google Drive and read it locally.
+
+    Handles uploaded .docx, .pdf, .txt, .rtf files, and also Google Docs
+    (exported as .docx).
+    """
+    import io
+    import tempfile
+    from googleapiclient.http import MediaIoBaseDownload
+
+    # Get file metadata to determine type
+    meta = drive_service.files().get(fileId=file_id, fields="name, mimeType").execute()
+    name = meta.get("name", "Untitled")
+    mime = meta.get("mimeType", "")
+
+    print(f"  File: {name} ({mime})")
+
+    if mime == "application/vnd.google-apps.document":
+        # Native Google Doc — export as docx
+        request = drive_service.files().export_media(fileId=file_id, mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        suffix = ".docx"
+    else:
+        # Uploaded file — download as-is
+        request = drive_service.files().get_media(fileId=file_id)
+        # Determine suffix from name or mime
+        ext = Path(name).suffix.lower()
+        suffix = ext if ext else ".docx"
+
+    buffer = io.BytesIO()
+    downloader = MediaIoBaseDownload(buffer, request)
+    done = False
+    while not done:
+        _, done = downloader.next_chunk()
+
+    # Write to temp file and read with the appropriate local reader
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(buffer.getvalue())
+        tmp_path = tmp.name
+
+    try:
+        return read_local_file(tmp_path, override_title=name)
+    finally:
+        os.unlink(tmp_path)
 
 
 def read_docx_file(filepath):
@@ -356,7 +415,7 @@ def read_rtf_file(filepath):
     return {"title": title, "sections": sections}
 
 
-def read_local_file(filepath):
+def read_local_file(filepath, override_title=None):
     """Dispatch to the right reader based on file extension."""
     ext = Path(filepath).suffix.lower()
 
@@ -378,7 +437,12 @@ def read_local_file(filepath):
         print(f"ERROR: Unsupported file type '{ext}'. Supported: {supported}")
         sys.exit(1)
 
-    return reader(filepath)
+    result = reader(filepath)
+    if override_title:
+        # Strip file extension from the override title
+        clean = Path(override_title).stem
+        result["title"] = clean
+    return result
 
 
 # ─── Outline compilation ─────────────────────────────────────────────
@@ -520,7 +584,7 @@ def run(doc_name=None, doc_id=None, local_file=None,
             print(f"Found: '{found_name}' ({source_id})")
 
         print("Reading note contents...")
-        doc_content = read_google_doc(docs_service, source_id)
+        doc_content = read_google_doc(docs_service, source_id, drive_service=drive_service)
         source_label = doc_content["title"]
 
     section_count = len(doc_content["sections"])
