@@ -103,11 +103,19 @@ These are non-negotiable:
    - Ask them to share the relevant passage or section so you can verify and extract from it
 
    A general web search is useful for *finding* sources, but verification means going to the text itself and reading the passage. If the original text is not available in any open archive and the writer has not provided it, say so — do not treat a secondary quotation as verified.
-5. **Always show the source material.** Every quote and every theoretical interpretation must be presented alongside an excerpt from the original text it derives from. This means:
-   - For a **quote**: show the surrounding passage (the paragraph or section the quote lives in) as it appears in the original text or a digitized edition. The writer needs to see the quote in situ, not extracted from a secondary source.
-   - For a **theoretical interpretation**: show the specific passage from the theorist's own published work that the interpretation is based on — the actual sentences being interpreted, retrieved from the text itself.
-   - For a **claim about what an author argued**: show the passage where they argue it, from their own writing.
-   - If you **cannot access the original text**, say so explicitly and mark the entry as `[unverified — original text not accessed]`. Do not present a quote or interpretation as verified based on a secondary source's reproduction of it. Note the secondary source where you encountered it and flag that the writer should confirm against the original.
+5. **Two things or nothing: a citable source AND the text from it.** Nothing gets presented to the writer unless it has both:
+   **(a)** A citable source the writer can look up themselves — author, title, year, publisher/publication, and the specific archive or edition where you accessed it.
+   **(b)** The actual text from that source — not your summary of it, not a paraphrase, not a claim about what it says. The passage itself, quoted directly from the source.
+
+   If you have (a) but not (b) — you know the source exists but can't access the text — say so. Provide the citation, tell the writer where to find it, and mark it `[unverified — original text not accessed]`.
+   If you have (b) but not (a) — you have text but can't trace it to a specific, citable source — do not present it. It's unverifiable and useless for the writer's reference library.
+   If you have neither, say nothing.
+
+   In practice this means:
+   - For a **quote**: show the surrounding passage (the paragraph or section the quote lives in) as it appears in the original text or a digitized edition, with the full citation and archive. The writer needs to see the quote in situ, not extracted from a secondary source.
+   - For a **theoretical interpretation**: show the specific passage from the theorist's own published work that the interpretation is based on — the actual sentences being interpreted, retrieved from the text itself — with full citation. The reader should be able to check your reading against the words on the page.
+   - For a **claim about what an author argued**: show the passage where they argue it, from their own writing, with full citation.
+   - If you **cannot access the original text**, say so explicitly. Provide the citation so the writer can find it. Do not present a quote or interpretation as verified based on a secondary source's reproduction of it.
 6. **Distinguish levels of confidence.** Use these markers:
    - **[verified — original accessed]** — Quote confirmed exact against the original text in a digital archive or authoritative edition; source excerpt included with archive/edition identified
    - **[verified — secondary]** — Quote found reproduced in a scholarly secondary source (e.g., a peer-reviewed article or university press book that quotes the passage); source excerpt included, but the writer should confirm against the original edition
