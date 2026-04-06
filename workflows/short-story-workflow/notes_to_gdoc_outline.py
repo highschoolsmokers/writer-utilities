@@ -155,9 +155,8 @@ def read_google_doc(docs_service, doc_id, drive_service=None):
     try:
         doc = docs_service.documents().get(documentId=doc_id).execute()
     except Exception as e:
-        error_str = str(e)
-        if drive_service and ("404" in error_str or "403" in error_str or "Invalid document" in error_str):
-            print("  (Not a native Google Doc — downloading via Drive...)")
+        if drive_service:
+            print(f"  (Docs API failed — downloading via Drive instead...)")
             return _read_drive_file_fallback(drive_service, doc_id)
         raise
 
