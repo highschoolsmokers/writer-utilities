@@ -227,6 +227,14 @@ def run(doc_name=None, doc_id=None, local_file=None,
                 sys.exit(1)
             source_id = resolved_id
             print(f"Using doc ID: {source_id}")
+        elif doc_name and ("docs.google.com" in doc_name or "drive.google.com" in doc_name):
+            # User passed a URL via --doc instead of --doc-id — handle it gracefully
+            resolved_id = extract_doc_id_from_url(doc_name)
+            if not resolved_id:
+                print(f"ERROR: Could not parse doc ID from URL '{doc_name}'.")
+                sys.exit(1)
+            source_id = resolved_id
+            print(f"Detected URL → doc ID: {source_id}")
         else:
             print(f"Searching for doc: '{doc_name}'...")
             result = find_doc_by_name(drive_service, doc_name)

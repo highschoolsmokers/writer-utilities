@@ -203,7 +203,11 @@ if step.startswith("1"):
             if not gdoc_url:
                 st.warning("Please enter a Google Doc URL.")
                 st.stop()
-            cmd += ["--doc", gdoc_url]
+            # Auto-detect: URL → --doc-id, plain name → --doc
+            if "docs.google.com" in gdoc_url or "drive.google.com" in gdoc_url:
+                cmd += ["--doc-id", gdoc_url]
+            else:
+                cmd += ["--doc", gdoc_url]
 
         if title:
             cmd += ["--title", title]
@@ -263,7 +267,11 @@ elif step.startswith("2"):
             if not gdoc_url:
                 st.warning("Please enter a Google Doc URL.")
                 st.stop()
-            cmd += ["--doc", gdoc_url]
+            # Auto-detect: URL → --doc-id, plain name → --doc
+            if "docs.google.com" in gdoc_url or "drive.google.com" in gdoc_url:
+                cmd += ["--doc-id", gdoc_url]
+            else:
+                cmd += ["--doc", gdoc_url]
 
         if output_name:
             cmd += ["--output", output_name]
