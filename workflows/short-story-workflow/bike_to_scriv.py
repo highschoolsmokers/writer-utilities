@@ -203,6 +203,23 @@ def _binder_item_xml(title, item_uuid, item_type="Text", children_xml="",
 """
 
 
+def _has_heading_children(row):
+    """Check if any direct children are headings (structural grouping)."""
+    return any(child.data_type == "heading" for child in row.children)
+
+
+def _gather_child_text(row):
+    """Collect all child text into body content for a Text document."""
+    lines = []
+    for child in row.children:
+        if child.text:
+            lines.append(child.text)
+        for grandchild in child.children:
+            if grandchild.text:
+                lines.append(grandchild.text)
+    return "\n".join(lines)
+
+
 def _bike_row_to_content(row):
     """
     Build the text content for a Scrivener document from a BikeRow.
@@ -245,8 +262,8 @@ def _build_manuscript_items(rows, scriv_dir, now, depth=0):
             stats["research"] += 1
             continue
 
-        # Heading rows with children → Folders
-        if row.data_type == "heading" and row.children:
+        # Heading rows with children that are themselves headings → Folders
+        if row.data_type == "heading" and row.children and _has_heading_children(row):
             folder_uuid = _generate_uuid()
             _make_data_dir(scriv_dir, folder_uuid)
 
@@ -255,8 +272,6 @@ def _build_manuscript_items(rows, scriv_dir, now, depth=0):
                 row.children, scriv_dir, now, depth + 1
             )
 
-            # If the heading itself has no child items that became text,
-            # and it has text content, also write an RTF for the folder
             if row.text:
                 _write_content(scriv_dir, folder_uuid, row.text)
 
@@ -273,6 +288,21 @@ def _build_manuscript_items(rows, scriv_dir, now, depth=0):
             stats["folders"] += child_stats["folders"]
             stats["texts"] += child_stats["texts"]
             stats["research"] += child_stats["research"]
+
+        # Heading rows with only leaf children → Text documents
+        # (title = heading text, body = gathered child text)
+        elif row.data_type == "heading" and row.children and not _has_heading_children(row):
+            text_uuid = _generate_uuid()
+            content = _gather_child_text(row)
+            _write_content(scriv_dir, text_uuid, content)
+            manuscript_xml += _binder_item_xml(
+                row.text or "Untitled",
+                text_uuid,
+                "Text",
+                status_id="1",
+                now=now,
+            )
+            stats["texts"] += 1
 
         # Heading rows without children → Text documents
         elif row.data_type == "heading" and not row.children:
@@ -291,11 +321,11 @@ def _build_manuscript_items(rows, scriv_dir, now, depth=0):
         # Plain rows (body, task, ordered, unordered, etc.) → Text documents
         else:
             text_uuid = _generate_uuid()
-            content = _bike_row_to_content(row)
-            _write_content(scriv_dir, text_uuid, content)
 
-            # If it has children, make it a folder
-            if row.children:
+            # If it has children with headings, make it a folder
+            if row.children and _has_heading_children(row):
+                content = _bike_row_to_content(row)
+                _write_content(scriv_dir, text_uuid, content)
                 child_ms_xml, child_res_xml, child_stats = _build_manuscript_items(
                     row.children, scriv_dir, now, depth + 1
                 )
@@ -312,7 +342,21 @@ def _build_manuscript_items(rows, scriv_dir, now, depth=0):
                 stats["folders"] += child_stats["folders"]
                 stats["texts"] += child_stats["texts"]
                 stats["research"] += child_stats["research"]
+            # Leaf children → flatten into a single Text document
+            elif row.children:
+                content = _gather_child_text(row)
+                _write_content(scriv_dir, text_uuid, content)
+                manuscript_xml += _binder_item_xml(
+                    row.text or "Untitled",
+                    text_uuid,
+                    "Text",
+                    status_id="1",
+                    now=now,
+                )
+                stats["texts"] += 1
             else:
+                content = row.text or ""
+                _write_content(scriv_dir, text_uuid, content)
                 manuscript_xml += _binder_item_xml(
                     row.text or "Untitled",
                     text_uuid,
