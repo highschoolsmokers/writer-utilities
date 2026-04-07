@@ -77,35 +77,32 @@ st.markdown("""
     /* ── NAV — 2-column grid matching Nav.tsx ── */
     .site-nav {
         display: grid;
-        grid-template-columns: 1fr 2fr;
+        grid-template-columns: 2fr 1fr;
         gap: 3rem;
         align-items: end;
-        padding: 2rem 0 1.5rem 0;
-        border-bottom: 1px solid #000;
+        padding: 2rem 0 3rem 0;
         margin-bottom: 2.5rem;
     }
     .site-masthead {
         font-family: 'Geist', Arial, Helvetica, sans-serif;
-        font-size: 2.75rem;
+        font-size: 5.5rem;
         font-weight: 900;
-        letter-spacing: -0.03em;
-        line-height: 0.92;
+        letter-spacing: -0.025em;
+        line-height: 0.95;
         color: #000;
     }
     .site-nav-links {
         display: flex;
-        gap: 2rem;
-        align-items: baseline;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: flex-start;
     }
     .site-nav-links a {
         font-family: 'Geist', Arial, Helvetica, sans-serif;
-        font-size: 1rem;
+        font-size: 1.5rem;
         font-weight: 900;
         color: #000;
         text-decoration: none;
-        letter-spacing: -0.01em;
-        line-height: 1.2;
+        line-height: 1.375;
         white-space: nowrap;
         transition: opacity 0.3s ease-out;
     }
@@ -447,7 +444,7 @@ GRID = [1, 2]
 if step == "Google Doc":
     header_col, content = st.columns(GRID)
     with header_col:
-        st.markdown('<div class="step-header">Notes → Google Doc Outline</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-header">Notes→<br>Google Doc Outline</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-sub">Upload a notes file and create a structured outline in Google Docs.</div>', unsafe_allow_html=True)
     with content:
         source_type = st.radio("Source", ["Upload file", "Google Doc URL"], horizontal=True)
@@ -516,7 +513,7 @@ if step == "Google Doc":
 elif step == "Bike Outline":
     header_col, content = st.columns(GRID)
     with header_col:
-        st.markdown('<div class="step-header">Notes → Bike Outline</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-header">Notes→<br>Bike Outline</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-sub">Upload a notes file and export a .bike outline for Bike Outliner.</div>', unsafe_allow_html=True)
     with content:
         source_type = st.radio("Source", ["Upload file", "Google Doc URL"], horizontal=True, key="bike_source")
@@ -578,7 +575,7 @@ elif step == "Bike Outline":
 elif step == "Scrivener":
     header_col, content = st.columns(GRID)
     with header_col:
-        st.markdown('<div class="step-header">Bike → Scrivener Project</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-header">Bike→<br>Scrivener Project</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-sub">Convert a .bike outline into a Scrivener 3 project (.scriv).</div>', unsafe_allow_html=True)
     with content:
         tab_fwd, tab_rev = st.tabs(["Bike → Scrivener", "Scrivener → Bike"])
@@ -657,7 +654,7 @@ elif step == "Scrivener":
 elif step == "Shunn":
     header_col, content = st.columns(GRID)
     with header_col:
-        st.markdown('<div class="step-header">Scrivener → Shunn Manuscript</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-header">Scrivener→<br>Shunn Manuscript</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-sub">Format a compiled manuscript as Shunn short story format (.docx + .pdf) with a cover letter.</div>', unsafe_allow_html=True)
     with content:
         input_mode = st.radio("Input type", ["Upload compiled file", "Path to .scriv project"], horizontal=True)
