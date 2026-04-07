@@ -114,8 +114,6 @@ st.markdown("""
     }
     .site-nav-links a.active {
         pointer-events: none;
-        border-bottom: 2px solid #000;
-        padding-bottom: 2px;
     }
 
     /* ── TYPOGRAPHY ── */

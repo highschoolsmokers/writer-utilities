@@ -2,102 +2,146 @@
 # ─────────────────────────────────────────────────
 # Story Workflow — Streamlit Dashboard Launcher
 # ─────────────────────────────────────────────────
-# On first run, creates a virtual environment and installs dependencies.
-# On subsequent runs, activates the venv and launches the dashboard.
-#
-# Auto-quit: shuts itself down when you close the browser tab.
-# Manual quit: right-click → Quit in the Dock also works.
+# Key design: this script always exits quickly so the .app
+# stops bouncing in the Dock. Streamlit and the watchdog
+# run as fully detached background processes.
 
 SCRIPT_DIR="/Users/Gong/workspace/writer-utilities/workflows/short-story-workflow"
 VENV_DIR="$SCRIPT_DIR/.venv"
 PYTHON="/usr/local/bin/python3.12"
+VENV_PYTHON="$VENV_DIR/bin/python3"
+VENV_STREAMLIT="$VENV_DIR/bin/streamlit"
+VENV_PIP="$VENV_DIR/bin/pip"
 DASHBOARD="$SCRIPT_DIR/dashboard.py"
 LOG="$SCRIPT_DIR/.dashboard.log"
 PIDFILE="$SCRIPT_DIR/.streamlit.pid"
+PORT=8501
 
-# ── Kill any leftover Streamlit from a previous run ──
+# ── Ensure basic tools are on PATH (macOS .app has minimal PATH) ──
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+# ── Helper: focus or open the Streamlit tab in Chrome ──
+focus_chrome_tab() {
+    osascript <<'APPLESCRIPT'
+tell application "Google Chrome"
+    activate
+    set found to false
+    if (count of windows) > 0 then
+        repeat with w in windows
+            set tabIndex to 0
+            repeat with t in tabs of w
+                set tabIndex to tabIndex + 1
+                if URL of t contains "localhost:8501" then
+                    set active tab index of w to tabIndex
+                    set index of w to 1
+                    set found to true
+                    exit repeat
+                end if
+            end repeat
+            if found then exit repeat
+        end repeat
+    end if
+    if not found then
+        if (count of windows) is 0 then
+            make new window with properties {mode:"normal"}
+        end if
+        tell window 1 to make new tab with properties {URL:"http://localhost:8501"}
+    end if
+end tell
+APPLESCRIPT
+}
+
+# ── If Streamlit is already running, focus and exit immediately ──
 if [ -f "$PIDFILE" ]; then
     OLD_PID=$(cat "$PIDFILE")
-    kill "$OLD_PID" 2>/dev/null
-    rm -f "$PIDFILE"
+    if kill -0 "$OLD_PID" 2>/dev/null; then
+        focus_chrome_tab
+        exit 0
+    else
+        rm -f "$PIDFILE"
+    fi
 fi
-lsof -ti:8501 | xargs kill 2>/dev/null || true
 
-# ── Cleanup function — runs on Quit / shutdown / tab close ──
-cleanup() {
-    kill "$WATCHDOG_PID" 2>/dev/null
-    kill "$STREAMLIT_PID" 2>/dev/null
-    wait "$STREAMLIT_PID" 2>/dev/null
-    rm -f "$PIDFILE"
+# Also check if something is already listening on the port
+if curl -s -o /dev/null http://localhost:$PORT 2>/dev/null; then
+    focus_chrome_tab
     exit 0
-}
-trap cleanup SIGTERM SIGINT SIGHUP EXIT
+fi
+
+# ── Kill anything stale on the port ──
+lsof -ti:$PORT | xargs kill 2>/dev/null || true
 
 # ── First-run setup ──
-if [ ! -d "$VENV_DIR" ]; then
+if [ ! -f "$VENV_STREAMLIT" ]; then
     osascript -e 'display notification "Setting up Story Workflow for the first time..." with title "Story Workflow"'
 
     "$PYTHON" -m venv "$VENV_DIR" 2>>"$LOG"
-
-    source "$VENV_DIR/bin/activate"
-    pip install --upgrade pip >>"$LOG" 2>&1
-    pip install -r "$SCRIPT_DIR/requirements.txt" >>"$LOG" 2>&1
+    "$VENV_PIP" install --upgrade pip >>"$LOG" 2>&1
+    "$VENV_PIP" install -r "$SCRIPT_DIR/requirements.txt" >>"$LOG" 2>&1
 
     if command -v npm &>/dev/null; then
         npm install -g docx >>"$LOG" 2>&1 || true
     fi
 
     osascript -e 'display notification "Setup complete! Launching dashboard..." with title "Story Workflow"'
-else
-    source "$VENV_DIR/bin/activate"
 fi
 
-# ── Launch Streamlit ──
-cd "$SCRIPT_DIR"
+# ── Launch everything in a detached subshell ──
+# The .app process exits immediately; Streamlit lives on its own.
+nohup bash -c '
+    SCRIPT_DIR="'"$SCRIPT_DIR"'"
+    VENV_STREAMLIT="'"$VENV_STREAMLIT"'"
+    DASHBOARD="'"$DASHBOARD"'"
+    LOG="'"$LOG"'"
+    PIDFILE="'"$PIDFILE"'"
+    PORT='"$PORT"'
 
-streamlit run "$DASHBOARD" \
-    --server.headless true \
-    --browser.gatherUsageStats false \
-    --server.port 8501 \
-    2>>"$LOG" &
+    cd "$SCRIPT_DIR"
 
-STREAMLIT_PID=$!
-echo "$STREAMLIT_PID" > "$PIDFILE"
+    "$VENV_STREAMLIT" run "$DASHBOARD" \
+        --server.headless true \
+        --browser.gatherUsageStats false \
+        --server.port $PORT \
+        >>"$LOG" 2>&1 &
 
-# Open browser after Streamlit starts
-sleep 2
-open http://localhost:8501
+    STREAMLIT_PID=$!
+    echo "$STREAMLIT_PID" > "$PIDFILE"
 
-# ── Watchdog: auto-quit when browser tab closes ──
-# Streamlit keeps a WebSocket connection open while the tab is active.
-# When the tab closes, the connection count on port 8501 drops to
-# only LISTEN (no ESTABLISHED). We watch for that and shut down.
-(
-    # Give the browser time to connect before we start checking
-    sleep 8
+    # Wait for server to be ready
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        sleep 1
+        if curl -s -o /dev/null http://localhost:$PORT 2>/dev/null; then
+            break
+        fi
+    done
 
+    # Open Chrome tab
+    osascript -e "tell application \"Google Chrome\" to activate" \
+              -e "tell application \"Google Chrome\" to tell window 1 to make new tab with properties {URL:\"http://localhost:'"$PORT"'\"}"
+
+    # Watchdog: kill Streamlit when browser disconnects
+    sleep 10
     IDLE_COUNT=0
     while true; do
-        # Count ESTABLISHED connections to the Streamlit port
-        CONNS=$(lsof -i:8501 -sTCP:ESTABLISHED 2>/dev/null | grep -c ESTABLISHED)
-
+        if ! kill -0 "$STREAMLIT_PID" 2>/dev/null; then
+            break
+        fi
+        CONNS=$(lsof -i:$PORT -sTCP:ESTABLISHED 2>/dev/null | grep -c ESTABLISHED || true)
         if [ "$CONNS" -eq 0 ]; then
             IDLE_COUNT=$((IDLE_COUNT + 1))
-            # 3 consecutive checks with no connections = tab is closed
-            # (15 seconds grace period to handle brief reconnects/refreshes)
             if [ "$IDLE_COUNT" -ge 3 ]; then
                 kill "$STREAMLIT_PID" 2>/dev/null
+                rm -f "$PIDFILE"
                 exit 0
             fi
         else
             IDLE_COUNT=0
         fi
-
         sleep 5
     done
-) &
-WATCHDOG_PID=$!
+    rm -f "$PIDFILE"
+' >>"$LOG" 2>&1 &
 
-# Wait for Streamlit to exit (via watchdog, Dock quit, or otherwise)
-wait "$STREAMLIT_PID"
-rm -f "$PIDFILE"
+# Give it just a moment so the PID file gets written
+sleep 1
+exit 0
